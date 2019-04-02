@@ -5,7 +5,8 @@ namespace pixi_projection {
         size = 100;
         MAX_TEXTURES_LOCAL = 1;
 
-        shaderVert = `precision highp float;
+        shaderVert = `
+precision highp float;
 attribute vec2 aVertexPosition;
 attribute vec3 aTrans1;
 attribute vec3 aTrans2;
@@ -26,7 +27,7 @@ varying float vTextureId;
 void main(void){
     gl_Position.xyw = projectionMatrix * worldTransform * vec3(aVertexPosition, 1.0);
     gl_Position.z = 0.0;
-    
+
     vTextureCoord = aVertexPosition;
     vTrans1 = aTrans1;
     vTrans2 = aTrans2;
@@ -37,7 +38,8 @@ void main(void){
 `;
         //TODO: take non-premultiplied case into account
 
-        shaderFrag = `precision highp float;
+        shaderFrag = `
+precision highp float;
 varying vec2 vTextureCoord;
 varying vec3 vTrans1;
 varying vec3 vTrans2;
@@ -46,7 +48,7 @@ varying vec4 vColor;
 varying float vTextureId;
 
 uniform sampler2D uSamplers[%count%];
-uniform vec2 samplerSize[%count%]; 
+uniform vec2 samplerSize[%count%];
 uniform vec4 distortion;
 
 void main(void){
@@ -95,7 +97,7 @@ if (pixels.x < vFrame.x || pixels.x > vFrame.z ||
     uv.x = vTrans1.x * surface2.x + vTrans1.y * surface2.y + vTrans1.z;
     uv.y = vTrans2.x * surface2.x + vTrans2.y * surface2.y + vTrans2.z;
     pixels = uv * samplerSize[0];
-    
+
     if (pixels.x < vFrame.x || pixels.x > vFrame.z ||
         pixels.y < vFrame.y || pixels.y > vFrame.w) {
         discard;
@@ -114,7 +116,8 @@ vec4 color;
 vec2 textureCoord = uv;
 %forloop%
 gl_FragColor = color * rColor;
-}`;
+}
+`;
 
         defUniforms = {
             worldTransform: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]),
