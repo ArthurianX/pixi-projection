@@ -24,7 +24,7 @@
     "watch": "tsc -w",
     "prebuild": "yarn cleanup",
     "make:dts": "node scripts/make_dts.js && node scripts/make_dts_no_spine.js",
-    "build": "tsc && tsc -p tsconfig-no-spine.json && yarn make:dts && uglifyjs -c -m --source-map -o dist/pixi-projection.min.js dist/pixi-projection.js",
+    "build": "tsc && tsc -p tsconfig-no-spine.json && yarn make:dts && uglifyjs -c -m --source-map -o dist/pixi-projection.min.js dist/pixi-projection.js && uglifyjs -c -m --source-map -o dist/pixi-projection-spine.min.js dist/pixi-projection-spine.js",
     "docs": "jsdoc -c scripts/jsdoc.conf.json -R README.md",
     "check:browserify": "yarn checkpack -- browserify -e test/checkpack.ts",
     "check:webpack": "yarn checkpack -- webpack -e test/checkpack.ts",
