@@ -10,7 +10,7 @@ namespace pixi_projection {
         proj: Projection3d;
 
         get worldTransform() {
-	        return this.proj.affine ? this.transform.worldTransform : this.proj.world as any;
+	        return this.proj._affine ? this.transform.worldTransform : this.proj.world as any;
         }
 
 	    toLocal<T extends PIXI.PointLike>(position: PIXI.PointLike, from?: PIXI.DisplayObject,

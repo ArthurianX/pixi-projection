@@ -16,7 +16,7 @@ namespace pixi_projection {
 		}
 
 		get worldTransform() {
-			return this.proj.affine ? this.transform.worldTransform : this.proj.world as any;
+			return this.proj._affine ? this.transform.worldTransform : this.proj.world as any;
 		}
 	}
 }

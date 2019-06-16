@@ -6,7 +6,7 @@ namespace pixi_projection {
 		const pwid = (parentTransform as any)._worldID;
 
 		const lt = ta.localTransform;
-		const scaleAfterAffine = proj.scaleAfterAffine && proj.affine >= 2;
+		const scaleAfterAffine = proj.scaleAfterAffine && proj._affine >= 2;
 
 		//this part is copied from
 		if (ta._localID !== ta._currentLocalID) {

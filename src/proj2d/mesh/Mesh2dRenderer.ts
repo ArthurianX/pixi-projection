@@ -1,6 +1,6 @@
 namespace pixi_projection {
-	let shaderVert =
-		`precision highp float;
+	let shaderVert = `
+precision highp float;
 attribute vec2 aVertexPosition;
 attribute vec2 aTextureCoord;
 
@@ -27,7 +27,8 @@ uniform sampler2D uSampler;
 void main(void)
 {
     gl_FragColor = texture2D(uSampler, vTextureCoord) * uColor;
-}`;
+}
+`;
 
 	export class Mesh2dRenderer extends PIXI.mesh.MeshRenderer {
 		onContextChange()

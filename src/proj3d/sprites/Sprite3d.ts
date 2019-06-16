@@ -190,7 +190,7 @@ namespace pixi_projection {
 		}
 
 		get worldTransform() {
-			return this.proj.affine ? this.transform.worldTransform : this.proj.world as any;
+			return this.proj._affine ? this.transform.worldTransform : this.proj.world as any;
 		}
 
 		toLocal<T extends PIXI.PointLike>(position: PIXI.PointLike, from?: PIXI.DisplayObject,
@@ -198,7 +198,7 @@ namespace pixi_projection {
 		                                  step = TRANSFORM_STEP.ALL): T {
 			return container3dToLocal.call(this, position, from, point, skipUpdate, step);
 		}
-		
+
 		isFrontFace(forceUpdate?: boolean) {
 			return container3dIsFrontFace.call(this, forceUpdate);
 		}

@@ -1,6 +1,6 @@
 namespace pixi_projection {
 	export function container3dWorldTransform() {
-		return this.proj.affine ? this.transform.worldTransform : this.proj.world as any;
+		return this.proj._affine ? this.transform.worldTransform : this.proj.world as any;
 	}
 
 	export class Container3d extends PIXI.Container {
@@ -60,7 +60,7 @@ namespace pixi_projection {
 				if (!skipUpdate) {
 					this.displayObjectUpdateTransform();
 				}
-				if (this.proj.affine) {
+				if (this.proj._affine) {
 					return this.transform.worldTransform.applyInverse(position, point) as any;
 				}
 				return this.proj.world.applyInverse(position, point) as any;
@@ -83,7 +83,7 @@ namespace pixi_projection {
 		}
 
 		get worldTransform() {
-			return this.proj.affine ? this.transform.worldTransform : this.proj.world as any;
+			return this.proj._affine ? this.transform.worldTransform : this.proj.world as any;
 		}
 
 		get position3d(): PIXI.PointLike {

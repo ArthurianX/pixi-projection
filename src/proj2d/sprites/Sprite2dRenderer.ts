@@ -2,8 +2,8 @@ namespace pixi_projection {
 	import MultiTextureSpriteRenderer = pixi_projection.webgl.MultiTextureSpriteRenderer;
 
 	class Sprite2dRenderer extends MultiTextureSpriteRenderer {
-		shaderVert =
-`precision highp float;
+		shaderVert =`
+precision highp float;
 attribute vec3 aVertexPosition;
 attribute vec2 aTextureCoord;
 attribute vec4 aColor;
@@ -18,12 +18,13 @@ varying float vTextureId;
 void main(void){
     gl_Position.xyw = projectionMatrix * aVertexPosition;
     gl_Position.z = 0.0;
-    
+
     vTextureCoord = aTextureCoord;
     vTextureId = aTextureId;
     vColor = aColor;
 }
 `;
+
 		shaderFrag = `
 varying vec2 vTextureCoord;
 varying vec4 vColor;
@@ -36,7 +37,8 @@ vec2 textureCoord = vTextureCoord;
 float textureId = floor(vTextureId+0.5);
 %forloop%
 gl_FragColor = color * vColor;
-}`;
+}
+`;
 
 		createVao(vertexBuffer: PIXI.glCore.GLBuffer) {
 			const attrs = this.shader.attributes;
