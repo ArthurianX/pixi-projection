@@ -131,7 +131,7 @@ var pixi_projection;
         var ta = this;
         var pwid = parentTransform._worldID;
         var lt = ta.localTransform;
-        var scaleAfterAffine = proj.scaleAfterAffine && proj.affine >= 2;
+        var scaleAfterAffine = proj.scaleAfterAffine && proj._affine >= 2;
         if (ta._localID !== ta._currentLocalID) {
             if (scaleAfterAffine) {
                 lt.a = ta._cx;
@@ -249,44 +249,6 @@ var pixi_projection;
             return BatchBuffer;
         }());
         webgl.BatchBuffer = BatchBuffer;
-    })(webgl = pixi_projection.webgl || (pixi_projection.webgl = {}));
-})(pixi_projection || (pixi_projection = {}));
-var pixi_projection;
-(function (pixi_projection) {
-    var webgl;
-    (function (webgl) {
-        function generateMultiTextureShader(vertexSrc, fragmentSrc, gl, maxTextures) {
-            fragmentSrc = fragmentSrc.replace(/%count%/gi, maxTextures + '');
-            fragmentSrc = fragmentSrc.replace(/%forloop%/gi, generateSampleSrc(maxTextures));
-            var shader = new PIXI.Shader(gl, vertexSrc, fragmentSrc);
-            var sampleValues = new Int32Array(maxTextures);
-            for (var i = 0; i < maxTextures; i++) {
-                sampleValues[i] = i;
-            }
-            shader.bind();
-            shader.uniforms.uSamplers = sampleValues;
-            return shader;
-        }
-        webgl.generateMultiTextureShader = generateMultiTextureShader;
-        function generateSampleSrc(maxTextures) {
-            var src = '';
-            src += '\n';
-            src += '\n';
-            for (var i = 0; i < maxTextures; i++) {
-                if (i > 0) {
-                    src += '\nelse ';
-                }
-                if (i < maxTextures - 1) {
-                    src += "if(textureId == " + i + ".0)";
-                }
-                src += '\n{';
-                src += "\n\tcolor = texture2D(uSamplers[" + i + "], textureCoord);";
-                src += '\n}';
-            }
-            src += '\n';
-            src += '\n';
-            return src;
-        }
     })(webgl = pixi_projection.webgl || (pixi_projection.webgl = {}));
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
@@ -532,6 +494,44 @@ var pixi_projection;
             return MultiTextureSpriteRenderer;
         }(ObjectRenderer));
         webgl.MultiTextureSpriteRenderer = MultiTextureSpriteRenderer;
+    })(webgl = pixi_projection.webgl || (pixi_projection.webgl = {}));
+})(pixi_projection || (pixi_projection = {}));
+var pixi_projection;
+(function (pixi_projection) {
+    var webgl;
+    (function (webgl) {
+        function generateMultiTextureShader(vertexSrc, fragmentSrc, gl, maxTextures) {
+            fragmentSrc = fragmentSrc.replace(/%count%/gi, maxTextures + '');
+            fragmentSrc = fragmentSrc.replace(/%forloop%/gi, generateSampleSrc(maxTextures));
+            var shader = new PIXI.Shader(gl, vertexSrc, fragmentSrc);
+            var sampleValues = new Int32Array(maxTextures);
+            for (var i = 0; i < maxTextures; i++) {
+                sampleValues[i] = i;
+            }
+            shader.bind();
+            shader.uniforms.uSamplers = sampleValues;
+            return shader;
+        }
+        webgl.generateMultiTextureShader = generateMultiTextureShader;
+        function generateSampleSrc(maxTextures) {
+            var src = '';
+            src += '\n';
+            src += '\n';
+            for (var i = 0; i < maxTextures; i++) {
+                if (i > 0) {
+                    src += '\nelse ';
+                }
+                if (i < maxTextures - 1) {
+                    src += "if(textureId == " + i + ".0)";
+                }
+                src += '\n{';
+                src += "\n\tcolor = texture2D(uSamplers[" + i + "], textureCoord);";
+                src += '\n}';
+            }
+            src += '\n';
+            src += '\n';
+            return src;
+        }
     })(webgl = pixi_projection.webgl || (pixi_projection.webgl = {}));
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
@@ -892,8 +892,8 @@ var pixi_projection;
             var _this = _super !== null && _super.apply(this, arguments) || this;
             _this.size = 100;
             _this.MAX_TEXTURES_LOCAL = 1;
-            _this.shaderVert = "precision highp float;\nattribute vec2 aVertexPosition;\nattribute vec3 aTrans1;\nattribute vec3 aTrans2;\nattribute vec4 aFrame;\nattribute vec4 aColor;\nattribute float aTextureId;\n\nuniform mat3 projectionMatrix;\nuniform mat3 worldTransform;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nvoid main(void){\n    gl_Position.xyw = projectionMatrix * worldTransform * vec3(aVertexPosition, 1.0);\n    gl_Position.z = 0.0;\n    \n    vTextureCoord = aVertexPosition;\n    vTrans1 = aTrans1;\n    vTrans2 = aTrans2;\n    vTextureId = aTextureId;\n    vColor = aColor;\n    vFrame = aFrame;\n}\n";
-            _this.shaderFrag = "precision highp float;\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nuniform sampler2D uSamplers[%count%];\nuniform vec2 samplerSize[%count%]; \nuniform vec4 distortion;\n\nvoid main(void){\nvec2 surface;\nvec2 surface2;\n\nfloat vx = vTextureCoord.x;\nfloat vy = vTextureCoord.y;\nfloat dx = distortion.x;\nfloat dy = distortion.y;\nfloat revx = distortion.z;\nfloat revy = distortion.w;\n\nif (distortion.x == 0.0) {\n    surface.x = vx;\n    surface.y = vy / (1.0 + dy * vx);\n    surface2 = surface;\n} else\nif (distortion.y == 0.0) {\n    surface.y = vy;\n    surface.x = vx/ (1.0 + dx * vy);\n    surface2 = surface;\n} else {\n    float c = vy * dx - vx * dy;\n    float b = (c + 1.0) * 0.5;\n    float b2 = (-c + 1.0) * 0.5;\n    float d = b * b + vx * dy;\n    if (d < -0.00001) {\n        discard;\n    }\n    d = sqrt(max(d, 0.0));\n    surface.x = (- b + d) * revy;\n    surface2.x = (- b - d) * revy;\n    surface.y = (- b2 + d) * revx;\n    surface2.y = (- b2 - d) * revx;\n}\n\nvec2 uv;\nuv.x = vTrans1.x * surface.x + vTrans1.y * surface.y + vTrans1.z;\nuv.y = vTrans2.x * surface.x + vTrans2.y * surface.y + vTrans2.z;\n\nvec2 pixels = uv * samplerSize[0];\n\nif (pixels.x < vFrame.x || pixels.x > vFrame.z ||\n    pixels.y < vFrame.y || pixels.y > vFrame.w) {\n    uv.x = vTrans1.x * surface2.x + vTrans1.y * surface2.y + vTrans1.z;\n    uv.y = vTrans2.x * surface2.x + vTrans2.y * surface2.y + vTrans2.z;\n    pixels = uv * samplerSize[0];\n    \n    if (pixels.x < vFrame.x || pixels.x > vFrame.z ||\n        pixels.y < vFrame.y || pixels.y > vFrame.w) {\n        discard;\n    }\n}\n\nvec4 edge;\nedge.xy = clamp(pixels - vFrame.xy + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\nedge.zw = clamp(vFrame.zw - pixels + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\n\nfloat alpha = 1.0; //edge.x * edge.y * edge.z * edge.w;\nvec4 rColor = vColor * alpha;\n\nfloat textureId = floor(vTextureId+0.5);\nvec4 color;\nvec2 textureCoord = uv;\n%forloop%\ngl_FragColor = color * rColor;\n}";
+            _this.shaderVert = "\nprecision highp float;\nattribute vec2 aVertexPosition;\nattribute vec3 aTrans1;\nattribute vec3 aTrans2;\nattribute vec4 aFrame;\nattribute vec4 aColor;\nattribute float aTextureId;\n\nuniform mat3 projectionMatrix;\nuniform mat3 worldTransform;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nvoid main(void){\n    gl_Position.xyw = projectionMatrix * worldTransform * vec3(aVertexPosition, 1.0);\n    gl_Position.z = 0.0;\n\n    vTextureCoord = aVertexPosition;\n    vTrans1 = aTrans1;\n    vTrans2 = aTrans2;\n    vTextureId = aTextureId;\n    vColor = aColor;\n    vFrame = aFrame;\n}\n";
+            _this.shaderFrag = "\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nuniform sampler2D uSamplers[%count%];\nuniform vec2 samplerSize[%count%];\nuniform vec4 distortion;\n\nvoid main(void){\nvec2 surface;\nvec2 surface2;\n\nfloat vx = vTextureCoord.x;\nfloat vy = vTextureCoord.y;\nfloat dx = distortion.x;\nfloat dy = distortion.y;\nfloat revx = distortion.z;\nfloat revy = distortion.w;\n\nif (distortion.x == 0.0) {\n    surface.x = vx;\n    surface.y = vy / (1.0 + dy * vx);\n    surface2 = surface;\n} else\nif (distortion.y == 0.0) {\n    surface.y = vy;\n    surface.x = vx/ (1.0 + dx * vy);\n    surface2 = surface;\n} else {\n    float c = vy * dx - vx * dy;\n    float b = (c + 1.0) * 0.5;\n    float b2 = (-c + 1.0) * 0.5;\n    float d = b * b + vx * dy;\n    if (d < -0.00001) {\n        discard;\n    }\n    d = sqrt(max(d, 0.0));\n    surface.x = (- b + d) * revy;\n    surface2.x = (- b - d) * revy;\n    surface.y = (- b2 + d) * revx;\n    surface2.y = (- b2 - d) * revx;\n}\n\nvec2 uv;\nuv.x = vTrans1.x * surface.x + vTrans1.y * surface.y + vTrans1.z;\nuv.y = vTrans2.x * surface.x + vTrans2.y * surface.y + vTrans2.z;\n\nvec2 pixels = uv * samplerSize[0];\n\nif (pixels.x < vFrame.x || pixels.x > vFrame.z ||\n    pixels.y < vFrame.y || pixels.y > vFrame.w) {\n    uv.x = vTrans1.x * surface2.x + vTrans1.y * surface2.y + vTrans1.z;\n    uv.y = vTrans2.x * surface2.x + vTrans2.y * surface2.y + vTrans2.z;\n    pixels = uv * samplerSize[0];\n\n    if (pixels.x < vFrame.x || pixels.x > vFrame.z ||\n        pixels.y < vFrame.y || pixels.y > vFrame.w) {\n        discard;\n    }\n}\n\nvec4 edge;\nedge.xy = clamp(pixels - vFrame.xy + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\nedge.zw = clamp(vFrame.zw - pixels + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\n\nfloat alpha = 1.0; //edge.x * edge.y * edge.z * edge.w;\nvec4 rColor = vColor * alpha;\n\nfloat textureId = floor(vTextureId+0.5);\nvec4 color;\nvec2 textureCoord = uv;\n%forloop%\ngl_FragColor = color * rColor;\n}\n";
             _this.defUniforms = {
                 worldTransform: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]),
                 distortion: new Float32Array([0, 0])
@@ -968,8 +968,8 @@ var pixi_projection;
             var _this = _super !== null && _super.apply(this, arguments) || this;
             _this.size = 100;
             _this.MAX_TEXTURES_LOCAL = 1;
-            _this.shaderVert = "precision highp float;\nattribute vec2 aVertexPosition;\nattribute vec3 aTrans1;\nattribute vec3 aTrans2;\nattribute vec4 aFrame;\nattribute vec4 aColor;\nattribute float aTextureId;\n\nuniform mat3 projectionMatrix;\nuniform mat3 worldTransform;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nvoid main(void){\n    gl_Position.xyw = projectionMatrix * worldTransform * vec3(aVertexPosition, 1.0);\n    gl_Position.z = 0.0;\n    \n    vTextureCoord = aVertexPosition;\n    vTrans1 = aTrans1;\n    vTrans2 = aTrans2;\n    vTextureId = aTextureId;\n    vColor = aColor;\n    vFrame = aFrame;\n}\n";
-            _this.shaderFrag = "precision highp float;\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nuniform sampler2D uSamplers[%count%];\nuniform vec2 samplerSize[%count%]; \nuniform vec4 params;\n\nvoid main(void){\nvec2 surface;\n\nfloat vx = vTextureCoord.x;\nfloat vy = vTextureCoord.y;\nfloat aleph = params.x;\nfloat bet = params.y;\nfloat A = params.z;\nfloat B = params.w;\n\nif (aleph == 0.0) {\n\tsurface.y = vy / (1.0 + vx * bet);\n\tsurface.x = vx;\n}\nelse if (bet == 0.0) {\n\tsurface.x = vx / (1.0 + vy * aleph);\n\tsurface.y = vy;\n} else {\n\tsurface.x = vx * (bet + 1.0) / (bet + 1.0 + vy * aleph);\n\tsurface.y = vy * (aleph + 1.0) / (aleph + 1.0 + vx * bet);\n}\n\nvec2 uv;\nuv.x = vTrans1.x * surface.x + vTrans1.y * surface.y + vTrans1.z;\nuv.y = vTrans2.x * surface.x + vTrans2.y * surface.y + vTrans2.z;\n\nvec2 pixels = uv * samplerSize[0];\n\nvec4 edge;\nedge.xy = clamp(pixels - vFrame.xy + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\nedge.zw = clamp(vFrame.zw - pixels + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\n\nfloat alpha = edge.x * edge.y * edge.z * edge.w;\nvec4 rColor = vColor * alpha;\n\nfloat textureId = floor(vTextureId+0.5);\nvec4 color;\nvec2 textureCoord = uv;\n%forloop%\ngl_FragColor = color * rColor;\n}";
+            _this.shaderVert = "\nprecision highp float;\nattribute vec2 aVertexPosition;\nattribute vec3 aTrans1;\nattribute vec3 aTrans2;\nattribute vec4 aFrame;\nattribute vec4 aColor;\nattribute float aTextureId;\n\nuniform mat3 projectionMatrix;\nuniform mat3 worldTransform;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nvoid main(void){\n    gl_Position.xyw = projectionMatrix * worldTransform * vec3(aVertexPosition, 1.0);\n    gl_Position.z = 0.0;\n\n    vTextureCoord = aVertexPosition;\n    vTrans1 = aTrans1;\n    vTrans2 = aTrans2;\n    vTextureId = aTextureId;\n    vColor = aColor;\n    vFrame = aFrame;\n}\n";
+            _this.shaderFrag = "\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec3 vTrans1;\nvarying vec3 vTrans2;\nvarying vec4 vFrame;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nuniform sampler2D uSamplers[%count%];\nuniform vec2 samplerSize[%count%];\nuniform vec4 params;\n\nvoid main(void){\nvec2 surface;\n\nfloat vx = vTextureCoord.x;\nfloat vy = vTextureCoord.y;\nfloat aleph = params.x;\nfloat bet = params.y;\nfloat A = params.z;\nfloat B = params.w;\n\nif (aleph == 0.0) {\n\tsurface.y = vy / (1.0 + vx * bet);\n\tsurface.x = vx;\n}\nelse if (bet == 0.0) {\n\tsurface.x = vx / (1.0 + vy * aleph);\n\tsurface.y = vy;\n} else {\n\tsurface.x = vx * (bet + 1.0) / (bet + 1.0 + vy * aleph);\n\tsurface.y = vy * (aleph + 1.0) / (aleph + 1.0 + vx * bet);\n}\n\nvec2 uv;\nuv.x = vTrans1.x * surface.x + vTrans1.y * surface.y + vTrans1.z;\nuv.y = vTrans2.x * surface.x + vTrans2.y * surface.y + vTrans2.z;\n\nvec2 pixels = uv * samplerSize[0];\n\nvec4 edge;\nedge.xy = clamp(pixels - vFrame.xy + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\nedge.zw = clamp(vFrame.zw - pixels + 0.5, vec2(0.0, 0.0), vec2(1.0, 1.0));\n\nfloat alpha = edge.x * edge.y * edge.z * edge.w;\nvec4 rColor = vColor * alpha;\n\nfloat textureId = floor(vTextureId+0.5);\nvec4 color;\nvec2 textureCoord = uv;\n%forloop%\ngl_FragColor = color * rColor;\n}";
             _this.defUniforms = {
                 worldTransform: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]),
                 distortion: new Float32Array([0, 0])
@@ -1208,37 +1208,6 @@ var pixi_projection;
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {
-    PIXI.Sprite.prototype.convertTo2s = function () {
-        if (this.proj)
-            return;
-        this.pluginName = 'sprite_bilinear';
-        this.aTrans = new PIXI.Matrix();
-        this.calculateVertices = pixi_projection.Sprite2s.prototype.calculateVertices;
-        this.calculateTrimmedVertices = pixi_projection.Sprite2s.prototype.calculateTrimmedVertices;
-        this._calculateBounds = pixi_projection.Sprite2s.prototype._calculateBounds;
-        PIXI.Container.prototype.convertTo2s.call(this);
-    };
-    PIXI.Container.prototype.convertTo2s = function () {
-        if (this.proj)
-            return;
-        this.proj = new pixi_projection.Projection2d(this.transform);
-        Object.defineProperty(this, "worldTransform", {
-            get: function () {
-                return this.proj;
-            },
-            enumerable: true,
-            configurable: true
-        });
-    };
-    PIXI.Container.prototype.convertSubtreeTo2s = function () {
-        this.convertTo2s();
-        for (var i = 0; i < this.children.length; i++) {
-            this.children[i].convertSubtreeTo2s();
-        }
-    };
-})(pixi_projection || (pixi_projection = {}));
-var pixi_projection;
-(function (pixi_projection) {
     var Sprite2s = (function (_super) {
         __extends(Sprite2s, _super);
         function Sprite2s(texture) {
@@ -1413,8 +1382,39 @@ var pixi_projection;
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {
+    PIXI.Sprite.prototype.convertTo2s = function () {
+        if (this.proj)
+            return;
+        this.pluginName = 'sprite_bilinear';
+        this.aTrans = new PIXI.Matrix();
+        this.calculateVertices = pixi_projection.Sprite2s.prototype.calculateVertices;
+        this.calculateTrimmedVertices = pixi_projection.Sprite2s.prototype.calculateTrimmedVertices;
+        this._calculateBounds = pixi_projection.Sprite2s.prototype._calculateBounds;
+        PIXI.Container.prototype.convertTo2s.call(this);
+    };
+    PIXI.Container.prototype.convertTo2s = function () {
+        if (this.proj)
+            return;
+        this.proj = new pixi_projection.Projection2d(this.transform);
+        Object.defineProperty(this, "worldTransform", {
+            get: function () {
+                return this.proj;
+            },
+            enumerable: true,
+            configurable: true
+        });
+    };
+    PIXI.Container.prototype.convertSubtreeTo2s = function () {
+        this.convertTo2s();
+        for (var i = 0; i < this.children.length; i++) {
+            this.children[i].convertSubtreeTo2s();
+        }
+    };
+})(pixi_projection || (pixi_projection = {}));
+var pixi_projection;
+(function (pixi_projection) {
     function container2dWorldTransform() {
-        return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+        return this.proj._affine ? this.transform.worldTransform : this.proj.world;
     }
     pixi_projection.container2dWorldTransform = container2dWorldTransform;
     var Container2d = (function (_super) {
@@ -1436,7 +1436,7 @@ var pixi_projection;
                 if (!skipUpdate) {
                     this.displayObjectUpdateTransform();
                 }
-                if (this.proj.affine) {
+                if (this.proj._affine) {
                     return this.transform.worldTransform.applyInverse(position, point);
                 }
                 return this.proj.world.applyInverse(position, point);
@@ -1454,7 +1454,7 @@ var pixi_projection;
         };
         Object.defineProperty(Container2d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -1841,7 +1841,7 @@ var pixi_projection;
         Projection2d.prototype.setAxisY = function (p, factor) {
             if (factor === void 0) { factor = 1; }
             var x = p.x, y = p.y;
-            var d = Math.sqrt(x * x + y * y);
+            var d = -Math.sqrt(x * x + y * y);
             var mat3 = this.matrix.mat3;
             mat3[3] = x / d;
             mat3[4] = y / d;
@@ -1940,7 +1940,7 @@ var pixi_projection;
         };
         Object.defineProperty(Mesh2d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -1951,8 +1951,8 @@ var pixi_projection;
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {
-    var shaderVert = "precision highp float;\nattribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat3 projectionMatrix;\nuniform mat3 translationMatrix;\nuniform mat3 uTransform;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void)\n{\n    gl_Position.xyw = projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0);\n    gl_Position.z = 0.0;\n\n    vTextureCoord = (uTransform * vec3(aTextureCoord, 1.0)).xy;\n}\n";
-    var shaderFrag = "\nvarying vec2 vTextureCoord;\nuniform vec4 uColor;\n\nuniform sampler2D uSampler;\n\nvoid main(void)\n{\n    gl_FragColor = texture2D(uSampler, vTextureCoord) * uColor;\n}";
+    var shaderVert = "\nprecision highp float;\nattribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat3 projectionMatrix;\nuniform mat3 translationMatrix;\nuniform mat3 uTransform;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void)\n{\n    gl_Position.xyw = projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0);\n    gl_Position.z = 0.0;\n\n    vTextureCoord = (uTransform * vec3(aTextureCoord, 1.0)).xy;\n}\n";
+    var shaderFrag = "\nvarying vec2 vTextureCoord;\nuniform vec4 uColor;\n\nuniform sampler2D uSampler;\n\nvoid main(void)\n{\n    gl_FragColor = texture2D(uSampler, vTextureCoord) * uColor;\n}\n";
     var Mesh2dRenderer = (function (_super) {
         __extends(Mesh2dRenderer, _super);
         function Mesh2dRenderer() {
@@ -1966,43 +1966,6 @@ var pixi_projection;
     }(PIXI.mesh.MeshRenderer));
     pixi_projection.Mesh2dRenderer = Mesh2dRenderer;
     PIXI.WebGLRenderer.registerPlugin('mesh2d', Mesh2dRenderer);
-})(pixi_projection || (pixi_projection = {}));
-var pixi_projection;
-(function (pixi_projection) {
-    function convertTo2d() {
-        if (this.proj)
-            return;
-        this.proj = new pixi_projection.Projection2d(this.transform);
-        this.toLocal = pixi_projection.Container2d.prototype.toLocal;
-        Object.defineProperty(this, "worldTransform", {
-            get: pixi_projection.container2dWorldTransform,
-            enumerable: true,
-            configurable: true
-        });
-    }
-    PIXI.Container.prototype.convertTo2d = convertTo2d;
-    PIXI.Sprite.prototype.convertTo2d = function () {
-        if (this.proj)
-            return;
-        this.calculateVertices = pixi_projection.Sprite2d.prototype.calculateVertices;
-        this.calculateTrimmedVertices = pixi_projection.Sprite2d.prototype.calculateTrimmedVertices;
-        this._calculateBounds = pixi_projection.Sprite2d.prototype._calculateBounds;
-        this.pluginName = 'sprite2d';
-        this.vertexData = new Float32Array(12);
-        convertTo2d.call(this);
-    };
-    PIXI.mesh.Mesh.prototype.convertTo2d = function () {
-        if (this.proj)
-            return;
-        this.pluginName = 'mesh2d';
-        convertTo2d.call(this);
-    };
-    PIXI.Container.prototype.convertSubtreeTo2d = function () {
-        this.convertTo2d();
-        for (var i = 0; i < this.children.length; i++) {
-            this.children[i].convertSubtreeTo2d();
-        }
-    };
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {
@@ -2115,7 +2078,7 @@ var pixi_projection;
         };
         Object.defineProperty(Sprite2d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -2131,8 +2094,8 @@ var pixi_projection;
         __extends(Sprite2dRenderer, _super);
         function Sprite2dRenderer() {
             var _this = _super !== null && _super.apply(this, arguments) || this;
-            _this.shaderVert = "precision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec4 aColor;\nattribute float aTextureId;\n\nuniform mat3 projectionMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nvoid main(void){\n    gl_Position.xyw = projectionMatrix * aVertexPosition;\n    gl_Position.z = 0.0;\n    \n    vTextureCoord = aTextureCoord;\n    vTextureId = aTextureId;\n    vColor = aColor;\n}\n";
-            _this.shaderFrag = "\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\nvarying float vTextureId;\nuniform sampler2D uSamplers[%count%];\n\nvoid main(void){\nvec4 color;\nvec2 textureCoord = vTextureCoord;\nfloat textureId = floor(vTextureId+0.5);\n%forloop%\ngl_FragColor = color * vColor;\n}";
+            _this.shaderVert = "\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec4 aColor;\nattribute float aTextureId;\n\nuniform mat3 projectionMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\nvarying float vTextureId;\n\nvoid main(void){\n    gl_Position.xyw = projectionMatrix * aVertexPosition;\n    gl_Position.z = 0.0;\n\n    vTextureCoord = aTextureCoord;\n    vTextureId = aTextureId;\n    vColor = aColor;\n}\n";
+            _this.shaderFrag = "\nvarying vec2 vTextureCoord;\nvarying vec4 vColor;\nvarying float vTextureId;\nuniform sampler2D uSamplers[%count%];\n\nvoid main(void){\nvec4 color;\nvec2 textureCoord = vTextureCoord;\nfloat textureId = floor(vTextureId+0.5);\n%forloop%\ngl_FragColor = color * vColor;\n}\n";
             return _this;
         }
         Sprite2dRenderer.prototype.createVao = function (vertexBuffer) {
@@ -2222,7 +2185,7 @@ var pixi_projection;
         }
         Object.defineProperty(Text2d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -2233,6 +2196,43 @@ var pixi_projection;
     Text2d.prototype.calculateVertices = pixi_projection.Sprite2d.prototype.calculateVertices;
     Text2d.prototype.calculateTrimmedVertices = pixi_projection.Sprite2d.prototype.calculateTrimmedVertices;
     Text2d.prototype._calculateBounds = pixi_projection.Sprite2d.prototype._calculateBounds;
+})(pixi_projection || (pixi_projection = {}));
+var pixi_projection;
+(function (pixi_projection) {
+    function convertTo2d() {
+        if (this.proj)
+            return;
+        this.proj = new pixi_projection.Projection2d(this.transform);
+        this.toLocal = pixi_projection.Container2d.prototype.toLocal;
+        Object.defineProperty(this, "worldTransform", {
+            get: pixi_projection.container2dWorldTransform,
+            enumerable: true,
+            configurable: true
+        });
+    }
+    PIXI.Container.prototype.convertTo2d = convertTo2d;
+    PIXI.Sprite.prototype.convertTo2d = function () {
+        if (this.proj)
+            return;
+        this.calculateVertices = pixi_projection.Sprite2d.prototype.calculateVertices;
+        this.calculateTrimmedVertices = pixi_projection.Sprite2d.prototype.calculateTrimmedVertices;
+        this._calculateBounds = pixi_projection.Sprite2d.prototype._calculateBounds;
+        this.pluginName = 'sprite2d';
+        this.vertexData = new Float32Array(12);
+        convertTo2d.call(this);
+    };
+    PIXI.mesh.Mesh.prototype.convertTo2d = function () {
+        if (this.proj)
+            return;
+        this.pluginName = 'mesh2d';
+        convertTo2d.call(this);
+    };
+    PIXI.Container.prototype.convertSubtreeTo2d = function () {
+        this.convertTo2d();
+        for (var i = 0; i < this.children.length; i++) {
+            this.children[i].convertSubtreeTo2d();
+        }
+    };
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {
@@ -2250,7 +2250,7 @@ var pixi_projection;
         }
         Object.defineProperty(TilingSprite2d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -2275,9 +2275,9 @@ var pixi_projection;
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {
-    var shaderVert = "attribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat3 projectionMatrix;\nuniform mat3 translationMatrix;\nuniform mat3 uTransform;\n\nvarying vec3 vTextureCoord;\n\nvoid main(void)\n{\n    gl_Position.xyw = projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0);\n\n    vTextureCoord = uTransform * vec3(aTextureCoord, 1.0);\n}\n";
+    var shaderVert = "\nattribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat3 projectionMatrix;\nuniform mat3 translationMatrix;\nuniform mat3 uTransform;\n\nvarying vec3 vTextureCoord;\n\nvoid main(void)\n{\n    gl_Position.xyw = projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0);\n\n    vTextureCoord = uTransform * vec3(aTextureCoord, 1.0);\n}\n";
     var shaderFrag = "\nvarying vec3 vTextureCoord;\n\nuniform sampler2D uSampler;\nuniform vec4 uColor;\nuniform mat3 uMapCoord;\nuniform vec4 uClampFrame;\nuniform vec2 uClampOffset;\n\nvoid main(void)\n{\n    vec2 coord = mod(vTextureCoord.xy / vTextureCoord.z - uClampOffset, vec2(1.0, 1.0)) + uClampOffset;\n    coord = (uMapCoord * vec3(coord, 1.0)).xy;\n    coord = clamp(coord, uClampFrame.xy, uClampFrame.zw);\n\n    vec4 sample = texture2D(uSampler, coord);\n    gl_FragColor = sample * uColor;\n}\n";
-    var shaderSimpleFrag = "\n\tvarying vec3 vTextureCoord;\n\nuniform sampler2D uSampler;\nuniform vec4 uColor;\n\nvoid main(void)\n{\n    vec4 sample = texture2D(uSampler, vTextureCoord.xy / vTextureCoord.z);\n    gl_FragColor = sample * uColor;\n}\n";
+    var shaderSimpleFrag = "\nvarying vec3 vTextureCoord;\n\nuniform sampler2D uSampler;\nuniform vec4 uColor;\n\nvoid main(void)\n{\n    vec4 sample = texture2D(uSampler, vTextureCoord.xy / vTextureCoord.z);\n    gl_FragColor = sample * uColor;\n}\n";
     var tempMat = new pixi_projection.Matrix2d();
     var WRAP_MODES = PIXI.WRAP_MODES;
     var utils = PIXI.utils;
@@ -2388,7 +2388,7 @@ var pixi_projection;
 var pixi_projection;
 (function (pixi_projection) {
     var spriteMaskVert = "\nattribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat3 projectionMatrix;\nuniform mat3 otherMatrix;\n\nvarying vec3 vMaskCoord;\nvarying vec2 vTextureCoord;\n\nvoid main(void)\n{\n\tgl_Position = vec4((projectionMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);\n\n\tvTextureCoord = aTextureCoord;\n\tvMaskCoord = otherMatrix * vec3( aTextureCoord, 1.0);\n}\n";
-    var spriteMaskFrag = "\nvarying vec3 vMaskCoord;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uSampler;\nuniform sampler2D mask;\nuniform float alpha;\nuniform vec4 maskClamp;\n\nvoid main(void)\n{\n    vec2 uv = vMaskCoord.xy / vMaskCoord.z;\n    \n    float clip = step(3.5,\n        step(maskClamp.x, uv.x) +\n        step(maskClamp.y, uv.y) +\n        step(uv.x, maskClamp.z) +\n        step(uv.y, maskClamp.w));\n\n    vec4 original = texture2D(uSampler, vTextureCoord);\n    vec4 masky = texture2D(mask, uv);\n    \n    original *= (masky.r * masky.a * alpha * clip);\n\n    gl_FragColor = original;\n}\n";
+    var spriteMaskFrag = "\nvarying vec3 vMaskCoord;\nvarying vec2 vTextureCoord;\n\nuniform sampler2D uSampler;\nuniform sampler2D mask;\nuniform float alpha;\nuniform vec4 maskClamp;\n\nvoid main(void)\n{\n    vec2 uv = vMaskCoord.xy / vMaskCoord.z;\n\n    float clip = step(3.5,\n        step(maskClamp.x, uv.x) +\n        step(maskClamp.y, uv.y) +\n        step(uv.x, maskClamp.z) +\n        step(uv.y, maskClamp.w));\n\n    vec4 original = texture2D(uSampler, vTextureCoord);\n    vec4 masky = texture2D(mask, uv);\n\n    original *= (masky.r * masky.a * alpha * clip);\n\n    gl_FragColor = original;\n}\n";
     var tempMat = new pixi_projection.Matrix2d();
     var SpriteMaskFilter2d = (function (_super) {
         __extends(SpriteMaskFilter2d, _super);
@@ -2435,7 +2435,7 @@ var pixi_projection;
 var pixi_projection;
 (function (pixi_projection) {
     function container3dWorldTransform() {
-        return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+        return this.proj._affine ? this.transform.worldTransform : this.proj.world;
     }
     pixi_projection.container3dWorldTransform = container3dWorldTransform;
     var Container3d = (function (_super) {
@@ -2479,7 +2479,7 @@ var pixi_projection;
                 if (!skipUpdate) {
                     this.displayObjectUpdateTransform();
                 }
-                if (this.proj.affine) {
+                if (this.proj._affine) {
                     return this.transform.worldTransform.applyInverse(position, point);
                 }
                 return this.proj.world.applyInverse(position, point);
@@ -2501,7 +2501,7 @@ var pixi_projection;
         };
         Object.defineProperty(Container3d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -3612,7 +3612,7 @@ var pixi_projection;
         }
         Object.defineProperty(Mesh3d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -3670,65 +3670,6 @@ var pixi_projection;
         return Mesh3d;
     }(PIXI.mesh.Mesh));
     pixi_projection.Mesh3d = Mesh3d;
-})(pixi_projection || (pixi_projection = {}));
-var pixi_projection;
-(function (pixi_projection) {
-    var containerProps = {
-        worldTransform: {
-            get: pixi_projection.container3dWorldTransform,
-            enumerable: true,
-            configurable: true
-        },
-        position3d: {
-            get: function () { return this.proj.position; },
-            set: function (value) { this.proj.position.copy(value); }
-        },
-        scale3d: {
-            get: function () { return this.proj.scale; },
-            set: function (value) { this.proj.scale.copy(value); }
-        },
-        pivot3d: {
-            get: function () { return this.proj.pivot; },
-            set: function (value) { this.proj.pivot.copy(value); }
-        },
-        euler: {
-            get: function () { return this.proj.euler; },
-            set: function (value) { this.proj.euler.copy(value); }
-        }
-    };
-    function convertTo3d() {
-        if (this.proj)
-            return;
-        this.proj = new pixi_projection.Projection3d(this.transform);
-        this.toLocal = pixi_projection.Container3d.prototype.toLocal;
-        this.isFrontFace = pixi_projection.Container3d.prototype.isFrontFace;
-        this.getDepth = pixi_projection.Container3d.prototype.getDepth;
-        Object.defineProperties(this, containerProps);
-    }
-    PIXI.Container.prototype.convertTo3d = convertTo3d;
-    PIXI.Sprite.prototype.convertTo3d = function () {
-        if (this.proj)
-            return;
-        this.calculateVertices = pixi_projection.Sprite3d.prototype.calculateVertices;
-        this.calculateTrimmedVertices = pixi_projection.Sprite3d.prototype.calculateTrimmedVertices;
-        this._calculateBounds = pixi_projection.Sprite3d.prototype._calculateBounds;
-        this.containsPoint = pixi_projection.Sprite3d.prototype.containsPoint;
-        this.pluginName = 'sprite2d';
-        this.vertexData = new Float32Array(12);
-        convertTo3d.call(this);
-    };
-    PIXI.mesh.Mesh.prototype.convertTo3d = function () {
-        if (this.proj)
-            return;
-        this.pluginName = 'mesh2d';
-        convertTo3d.call(this);
-    };
-    PIXI.Container.prototype.convertSubtreeTo3d = function () {
-        this.convertTo3d();
-        for (var i = 0; i < this.children.length; i++) {
-            this.children[i].convertSubtreeTo3d();
-        }
-    };
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {
@@ -3880,7 +3821,7 @@ var pixi_projection;
         };
         Object.defineProperty(Sprite3d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -3952,7 +3893,7 @@ var pixi_projection;
         }
         Object.defineProperty(Text3d.prototype, "worldTransform", {
             get: function () {
-                return this.proj.affine ? this.transform.worldTransform : this.proj.world;
+                return this.proj._affine ? this.transform.worldTransform : this.proj.world;
             },
             enumerable: true,
             configurable: true
@@ -4015,6 +3956,65 @@ var pixi_projection;
     Text3d.prototype._calculateBounds = pixi_projection.Sprite3d.prototype._calculateBounds;
     Text3d.prototype.containsPoint = pixi_projection.Sprite3d.prototype.containsPoint;
     Text3d.prototype._renderWebGL = pixi_projection.Sprite3d.prototype._renderWebGL;
+})(pixi_projection || (pixi_projection = {}));
+var pixi_projection;
+(function (pixi_projection) {
+    var containerProps = {
+        worldTransform: {
+            get: pixi_projection.container3dWorldTransform,
+            enumerable: true,
+            configurable: true
+        },
+        position3d: {
+            get: function () { return this.proj.position; },
+            set: function (value) { this.proj.position.copy(value); }
+        },
+        scale3d: {
+            get: function () { return this.proj.scale; },
+            set: function (value) { this.proj.scale.copy(value); }
+        },
+        pivot3d: {
+            get: function () { return this.proj.pivot; },
+            set: function (value) { this.proj.pivot.copy(value); }
+        },
+        euler: {
+            get: function () { return this.proj.euler; },
+            set: function (value) { this.proj.euler.copy(value); }
+        }
+    };
+    function convertTo3d() {
+        if (this.proj)
+            return;
+        this.proj = new pixi_projection.Projection3d(this.transform);
+        this.toLocal = pixi_projection.Container3d.prototype.toLocal;
+        this.isFrontFace = pixi_projection.Container3d.prototype.isFrontFace;
+        this.getDepth = pixi_projection.Container3d.prototype.getDepth;
+        Object.defineProperties(this, containerProps);
+    }
+    PIXI.Container.prototype.convertTo3d = convertTo3d;
+    PIXI.Sprite.prototype.convertTo3d = function () {
+        if (this.proj)
+            return;
+        this.calculateVertices = pixi_projection.Sprite3d.prototype.calculateVertices;
+        this.calculateTrimmedVertices = pixi_projection.Sprite3d.prototype.calculateTrimmedVertices;
+        this._calculateBounds = pixi_projection.Sprite3d.prototype._calculateBounds;
+        this.containsPoint = pixi_projection.Sprite3d.prototype.containsPoint;
+        this.pluginName = 'sprite2d';
+        this.vertexData = new Float32Array(12);
+        convertTo3d.call(this);
+    };
+    PIXI.mesh.Mesh.prototype.convertTo3d = function () {
+        if (this.proj)
+            return;
+        this.pluginName = 'mesh2d';
+        convertTo3d.call(this);
+    };
+    PIXI.Container.prototype.convertSubtreeTo3d = function () {
+        this.convertTo3d();
+        for (var i = 0; i < this.children.length; i++) {
+            this.children[i].convertSubtreeTo3d();
+        }
+    };
 })(pixi_projection || (pixi_projection = {}));
 var pixi_projection;
 (function (pixi_projection) {

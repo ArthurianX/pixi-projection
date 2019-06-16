@@ -29,7 +29,7 @@ uniform vec4 maskClamp;
 void main(void)
 {
     vec2 uv = vMaskCoord.xy / vMaskCoord.z;
-    
+
     float clip = step(3.5,
         step(maskClamp.x, uv.x) +
         step(maskClamp.y, uv.y) +
@@ -38,7 +38,7 @@ void main(void)
 
     vec4 original = texture2D(uSampler, vTextureCoord);
     vec4 masky = texture2D(mask, uv);
-    
+
     original *= (masky.r * masky.a * alpha * clip);
 
     gl_FragColor = original;

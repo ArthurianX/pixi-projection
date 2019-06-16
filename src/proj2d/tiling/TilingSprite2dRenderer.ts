@@ -1,6 +1,6 @@
 namespace pixi_projection {
-	let shaderVert =
-		`attribute vec2 aVertexPosition;
+	let shaderVert = `
+attribute vec2 aVertexPosition;
 attribute vec2 aTextureCoord;
 
 uniform mat3 projectionMatrix;
@@ -36,7 +36,7 @@ void main(void)
 }
 `;
 	let shaderSimpleFrag = `
-	varying vec3 vTextureCoord;
+varying vec3 vTextureCoord;
 
 uniform sampler2D uSampler;
 uniform vec4 uColor;

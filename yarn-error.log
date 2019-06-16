@@ -1,0 +1,93 @@
+Arguments: 
+  /Users/arthur/.nvm/versions/node/v10.9.0/bin/node /Users/arthur/.nvm/versions/node/v10.9.0/bin/yarn
+
+PATH: 
+  /usr/local/sbin:/Users/arthur/.rvm/gems/ruby-2.6.1/bin:/Users/arthur/.rvm/gems/ruby-2.6.1@global/bin:/Users/arthur/.rvm/rubies/ruby-2.6.1/bin:/Users/arthur/.nvm/versions/node/v10.9.0/bin:/Users/arthur/.cargo/bin:/usr/local/opt/v8@3.15/bin:/usr/local/opt/mysql@5.6/bin:/Users/arthur/bin:/usr/local/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/usr/local/MacGPG2/bin:/opt/X11/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Users/arthur/.rvm/bin:/Users/arthur/flutter/bin:/Users/arthur/Library/Android/sdk/emulator:/Users/arthur/Library/Android/sdk/tools:/Users/arthur/Library/Android/sdk/tools/bin:/Users/arthur/Library/Android/sdk/platform-tools:/Users/arthur/.pub-cache/bin
+
+Yarn version: 
+  1.16.0
+
+Node version: 
+  10.9.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  SyntaxError: /Users/arthur/Sites/pixi-projection/package.json: Unexpected token < in JSON at position 31
+      at JSON.parse (<anonymous>)
+      at /Users/arthur/.nvm/versions/node/v10.9.0/lib/node_modules/yarn/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/Users/arthur/.nvm/versions/node/v10.9.0/lib/node_modules/yarn/lib/cli.js:304:30)
+      at /Users/arthur/.nvm/versions/node/v10.9.0/lib/node_modules/yarn/lib/cli.js:315:13
+
+npm manifest: 
+  {
+    "name": "pixi-projection",
+  <<<<<<< HEAD
+    "version": "0.2.8",
+  =======
+    "version": "0.2.7",
+  >>>>>>> 3666d99f7605ab8bf5bfe41ecb5203ac4e38abc1
+    "description": "Projections (2.5d, 3d and bilinear) for pixi v^4",
+    "author": "Ivan Popelyshev",
+    "contributors": [
+      "Ivan Popelyshev <ivan.popelyshev@gmail.com>"
+    ],
+    "main": "./dist/pixi-projection.js",
+    "types": "./dist/pixi-projection.d.ts",
+    "homepage": "https://github.com/pixijs/pixi-projection",
+    "bugs": {
+      "url": "https://github.com/pixijs/pixi-projection/issues"
+    },
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/pixijs/pixi-projection.git"
+    },
+    "scripts": {
+      "cleanup": "rimraf bin && mkdirp dist",
+      "prestart": "yarn cleanup",
+      "start": "parallelshell \"yarn watch\"",
+      "watch": "tsc -w",
+      "prebuild": "yarn cleanup",
+      "make:dts": "node scripts/make_dts.js && node scripts/make_dts_no_spine.js",
+      "build": "tsc && tsc -p tsconfig-no-spine.json && yarn make:dts && uglifyjs -c -m --source-map -o dist/pixi-projection.min.js dist/pixi-projection.js && uglifyjs -c -m --source-map -o dist/pixi-projection-spine.min.js dist/pixi-projection-spine.js",
+      "docs": "jsdoc -c scripts/jsdoc.conf.json -R README.md",
+      "check:browserify": "yarn checkpack -- browserify -e test/checkpack.ts",
+      "check:webpack": "yarn checkpack -- webpack -e test/checkpack.ts",
+      "check:vanillajs": "yarn checkpack -- vanillajs -e test/checkpack.ts",
+      "check:all": "yarn build && yarn check:browserify && yarn check:webpack && yarn check:vanillajs"
+    },
+    "files": [
+      "dist/",
+      "src/",
+      "package.json",
+      "README.md"
+    ],
+    "devDependencies": {
+      "checkpack": "^0.2.7",
+      "del": "~2.2.0",
+      "glob": "~7.1.1",
+      "jaguarjs-jsdoc": "~1.0.1",
+      "jsdoc": "~3.4.0",
+      "mkdirp": "~0.5.1",
+      "parallelshell": "~2.0.0",
+      "pixi-spine": "~1.5.7",
+      "pixi.js": "~4.7.1",
+      "rimraf": "~2.5.3",
+      "static-html-server": "~0.1.2",
+      "tmp": "^0.0.33",
+      "ts-helpers": "~1.1.2",
+      "typescript": "^2.4.2"
+    },
+    "dependencies": {
+      "@types/pixi.js": "^4.7.1"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
